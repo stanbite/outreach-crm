@@ -436,6 +436,32 @@
       font-weight: 700;
     }
 
+    /* Split Comment Box UI */
+    .ghostwrite-comment-box {
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.2);
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .ghostwrite-header {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--cyan);
+      text-transform: uppercase;
+    }
+    .ghostwrite-body {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      background: rgba(0,0,0,0.3);
+      padding: 0.5rem;
+      border-radius: 4px;
+      min-height: 40px;
+    }
+
     /* Gemini AI Control Panel Styling */
     .gemini-config-box {
       background: rgba(0, 240, 255, 0.02);
@@ -813,7 +839,7 @@
           <button class="tab-btn active" onclick="switchTab('invite')">1. Connection Invite</button>
           <button class="tab-btn" onclick="switchTab('welcome')">2. Welcome Message</button>
           <button class="tab-btn" onclick="switchTab('followup')">3. Value Follow-Up</button>
-          <button class="tab-btn" onclick="switchTab('comment')">4. Comment Starter</button>
+          <button class="tab-btn" onclick="switchTab('comment')">4. Comment Ghostwriter</button>
         </div>
 
         <!-- Gemini AI Settings Panel -->
@@ -850,12 +876,32 @@
 
           <div class="form-group">
             <label for="gemini-instructions">AI Instructions / Custom "Gems" Rules</label>
-            <textarea id="gemini-instructions" placeholder="e.g. Keep invitations under 300 characters. Never sound pitchy or salesy. Mention something relevant about real estate micro-markets."></textarea>
+            <textarea id="gemini-instructions" placeholder="Enter custom rules here..." style="min-height: 120px;"></textarea>
           </div>
         </div>
 
-        <!-- Selected Template Container -->
-        <div class="template-card">
+        <!-- Post Input / Screenshot Area for Comment Tab -->
+        <div id="post-comment-input-area" style="display: none; border: 1px solid var(--border); padding: 1.25rem; border-radius: var(--radius-md); background: rgba(168, 85, 247, 0.03); flex-direction: column; gap: 1rem;">
+          <h3 style="font-size: 0.95rem; color: var(--purple); font-weight: 700; text-transform: uppercase;">📝 Prospect's Post Analyzer</h3>
+          
+          <!-- Image Paste zone for Post Screenshot -->
+          <div class="form-group">
+            <label>📷 Paste Screenshot of Prospect's Post</label>
+            <div class="ocr-dropzone" id="post-image-dropzone" tabindex="0" style="padding: 1rem; border-color: rgba(168, 85, 247, 0.3);">
+              <span style="font-size: 1.2rem; color: var(--purple);">📋</span>
+              <span style="font-size: 0.75rem; color: var(--text-secondary);" id="post-dropzone-text">Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan post text</span>
+              <div id="post-ocr-loader" style="display: none; font-size: 0.75rem; color: var(--cyan);">Scanning post...</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="p-post-text">Or Paste Prospect's Post Text Directly</label>
+            <textarea id="p-post-text" placeholder="Copy-paste the text of the LinkedIn post they wrote here..." style="min-height: 100px; font-size: 0.9rem;"></textarea>
+          </div>
+        </div>
+
+        <!-- Selected Template Container (hidden when commenter is active) -->
+        <div class="template-card" id="standard-template-box">
           <div class="template-meta">
             <span class="template-title" id="selected-template-title">Real Estate Hook Invite</span>
             <span class="char-limit" id="char-limit-counter">0 / 300</span>
@@ -892,13 +938,46 @@
             </div>
           </div>
 
-          <div class="live-preview">
+          <!-- Standard Live Output View -->
+          <div class="live-preview" id="standard-output-box">
             <span class="live-preview-badge">Message Output Draft</span>
             <div id="live-preview-text">Preview text will load...</div>
           </div>
 
+          <!-- Custom Ghostwriter Split Comments Output View -->
+          <div id="ghostwrite-output-box" style="display: none; flex-direction: column; gap: 1rem;">
+            <div class="live-preview" style="border-style: solid;">
+              <span class="live-preview-badge" style="background: var(--purple);">1-Sentence Summary</span>
+              <div id="ghostwrite-summary-text" style="font-family: var(--font-mono); font-size: 0.9rem; color: var(--text-primary);">Summary will load after generation...</div>
+            </div>
+
+            <div class="ghostwrite-comment-box">
+              <div class="ghostwrite-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Option 1: The Differentiator (Max 10 words)</span>
+                <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="copyCommentPiece(1)">📋 Copy</button>
+              </div>
+              <div class="ghostwrite-body" id="ghostwrite-opt1">Waiting for generation...</div>
+            </div>
+
+            <div class="ghostwrite-comment-box">
+              <div class="ghostwrite-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Option 2: The Contrarian Angle (Under 15 words)</span>
+                <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="copyCommentPiece(2)">📋 Copy</button>
+              </div>
+              <div class="ghostwrite-body" id="ghostwrite-opt2">Waiting for generation...</div>
+            </div>
+
+            <div class="ghostwrite-comment-box">
+              <div class="ghostwrite-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Option 3: The Forward-Looker (Under 15 words)</span>
+                <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="copyCommentPiece(3)">📋 Copy</button>
+              </div>
+              <div class="ghostwrite-body" id="ghostwrite-opt3">Waiting for generation...</div>
+            </div>
+          </div>
+
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button class="btn" style="flex-grow: 2;" onclick="copyPreviewToClipboard()">📋 Copy to Clipboard</button>
+            <button class="btn" style="flex-grow: 2;" id="btn-copy-main" onclick="copyPreviewToClipboard()">📋 Copy to Clipboard</button>
             <button class="btn btn-secondary" style="flex-grow: 1; border-color: var(--cyan); color: var(--cyan);" id="btn-generate-ai" onclick="generateAIMessage()">🤖 Generate with Gemini</button>
             <button class="btn btn-secondary" onclick="clearPersonalizer()">Clear</button>
           </div>
@@ -1124,6 +1203,33 @@
 
   <!-- JAVASCRIPT OUTREACH CONTROLLER -->
   <script>
+    // ===== DEFAULT SYSTEM INSTRUCTIONS PRE-FILLED WITH USER'S GHOSTWRITER SPECIFICATION =====
+    const GHOSTWRITER_DEFAULT_RULES = `# Role & Objective
+You are an expert LinkedIn Ghostwriter and B2B Lead Generation Assistant. Your core task is to analyze a provided LinkedIn post, deliver a one-sentence summary, and generate exactly three highly personalized, ultra-concise engagement comments designed to spark authentic peer-to-peer conversations.
+
+# Strict Comment Rules (Crucial for Output Quality)
+- Skip the Fluff: NEVER use generic praise or bot-like lines (e.g., "Awesome post," "Thanks for sharing," "So insightful").
+- Sound Natural: Use a casual, professional, peer-to-peer tone. Avoid sounding preachy, overly formal, or robotic.
+- Be Specific: Mention a precise detail from their text to prove we actually read it.
+- Length Constraints: 
+  * Option 1 MUST be 10 words or fewer.
+  * Options 2 and 3 MUST be under 15 words. Keep them punchy and brief.
+
+# Comment Frameworks
+## Option 1: The Differentiator
+- Focus: Highlight a specific point that makes their perspective unique compared to competitors.
+- Constraint: Maximum 10 words.
+- Format style: "Your point on [specific detail] is something most in [niche] miss. Makes sense." (Adjust to fit the word limit).
+
+## Option 2: The Contrarian Angle
+- Focus: Lean into a unique, unconventional, or counterintuitive insight they brought up.
+- Constraint: Under 15 words.
+- Format style: "Real talk. The [unique angle/insight] doesn't get nearly enough attention."
+
+## Option 3: The Forward-Looker
+- Focus: Leave them with a short, custom question or closing thought tied directly to how they wrapped up their post.
+- Constraint: Under 15 words.`;
+
     // ===== SYSTEM TEMPLATES LIBRARY (REAL ESTATE FOCUSED) =====
     const templates = {
       invite: [
@@ -1167,18 +1273,7 @@
           text: "Hi {Name},\n\nQuick follow-up on our chat! We recently helped a {Niche} over in the region streamline their client follow-up sequences, which saved them about 6 hours a week that they redirected to client acquisitions.\n\nSince you are representing clients in {City} under {Company}, I wanted to see if saving a few hours on admin tasks is something you are focusing on this season?\n\nBest,\n[Your Name]"
         }
       ],
-      comment: [
-        {
-          title: "Listing Post Congratulation (Comments)",
-          limit: 1000,
-          text: "Beautiful property, {Name}! The staging looks absolutely immaculate. Best of luck with the upcoming open house—great representation of {Company} in {City}!"
-        },
-        {
-          title: "Insightful Market Opinion (Comments)",
-          limit: 1000,
-          text: "Completely agree with this perspective, {Name}. The current shifting rates in {City} require {Niche}s to be highly proactive with their pipelines. Thanks for sharing this update from your team at {Company}!"
-        }
-      ]
+      comment: [] // Handled dynamically via Post Comment Generator inputs
     };
 
     // ===== APPLICATION STATE =====
@@ -1192,7 +1287,7 @@
     let geminiConfig = {
       apiKey: "",
       model: "gemini-2.5-flash",
-      instructions: ""
+      instructions: GHOSTWRITER_DEFAULT_RULES
     };
 
     // Initialize Page
@@ -1210,15 +1305,17 @@
         }
       });
 
-      // Bind paste events to the OCR Dropzone
+      // Bind paste events to the Prospect OCR Dropzone
       const dropzone = document.getElementById("image-dropzone");
       dropzone.addEventListener("paste", handleDropzonePaste);
-      dropzone.addEventListener("focus", () => {
-        dropzone.style.borderColor = "var(--cyan)";
-      });
-      dropzone.addEventListener("blur", () => {
-        dropzone.style.borderColor = "rgba(168, 85, 247, 0.4)";
-      });
+      dropzone.addEventListener("focus", () => { dropzone.style.borderColor = "var(--cyan)"; });
+      dropzone.addEventListener("blur", () => { dropzone.style.borderColor = "rgba(168, 85, 247, 0.4)"; });
+
+      // Bind paste events to the Post OCR Dropzone in Message Builder
+      const postDropzone = document.getElementById("post-image-dropzone");
+      postDropzone.addEventListener("paste", handlePostDropzonePaste);
+      postDropzone.addEventListener("focus", () => { postDropzone.style.borderColor = "var(--cyan)"; });
+      postDropzone.addEventListener("blur", () => { postDropzone.style.borderColor = "rgba(168, 85, 247, 0.3)"; });
 
       loadState();
       renderStats();
@@ -1238,6 +1335,7 @@
       if (storedProspects) {
         prospects = JSON.parse(storedProspects);
       } else {
+        // Pre-fill demo data with matching niche format
         prospects = [
           {
             niche: "Buyer Agent",
@@ -1299,10 +1397,17 @@
       const storedConfig = localStorage.getItem("outreach_gemini_config");
       if (storedConfig) {
         geminiConfig = JSON.parse(storedConfig);
+        // Pre-fill instructions if empty
+        if (!geminiConfig.instructions) {
+          geminiConfig.instructions = GHOSTWRITER_DEFAULT_RULES;
+        }
         document.getElementById("gemini-key").value = geminiConfig.apiKey || "";
         document.getElementById("gemini-model").value = geminiConfig.model || "gemini-2.5-flash";
-        document.getElementById("gemini-instructions").value = geminiConfig.instructions || "";
+        document.getElementById("gemini-instructions").value = geminiConfig.instructions;
         updateAPIStatus();
+      } else {
+        document.getElementById("gemini-instructions").value = GHOSTWRITER_DEFAULT_RULES;
+        saveAPIKey();
       }
     }
 
@@ -1317,7 +1422,6 @@
       showToast("Gemini configurations saved locally!");
     }
 
-    // Save instructions separately when typed
     document.getElementById("gemini-instructions").addEventListener("change", () => {
       geminiConfig.instructions = document.getElementById("gemini-instructions").value.trim();
       localStorage.setItem("outreach_gemini_config", JSON.stringify(geminiConfig));
@@ -1363,24 +1467,57 @@
       const originalText = button.innerHTML;
       button.innerHTML = "⏳ Thinking...";
       button.disabled = true;
-      showToast("Generating custom outreach draft...");
+      showToast("Generating outreach content...");
 
-      // Formulate detailed contextual prompt (driving rules like Gems)
-      let goal = "";
+      let prompt = "";
       let limit = 1000;
       
-      if (activeTab === 'invite') {
-        goal = "Write a personalized LinkedIn connection invitation note. It MUST be extremely concise, professional, and strictly under 300 characters total.";
-        limit = 300;
-      } else if (activeTab === 'welcome') {
-        goal = "Write a personalized welcome follow-up message to send after the prospect accepted our connection request. Highlight our background in real estate administration/consulting or ask a relevant value question.";
-      } else if (activeTab === 'followup') {
-        goal = "Write a value-add follow-up message sharing an asset or pitching a brief micro-market insight.";
-      } else if (activeTab === 'comment') {
-        goal = "Write a short, engaging comment to post on the prospect's LinkedIn content.";
-      }
+      // Determine prompt format based on active tab
+      if (activeTab === 'comment') {
+        const postText = document.getElementById("p-post-text").value.trim() || "[No post text provided]";
+        prompt = `
+${geminiConfig.instructions}
 
-      const prompt = `
+# Prospect Info:
+- Name: ${name}
+- Niche: ${nicheVal}
+- Company: ${company}
+- City: ${city}
+
+# Provided LinkedIn Post:
+"${postText}"
+
+# Output Format
+Provide the response exactly in the following clean, scannable format:
+
+### Post Summary
+[Insert 1-sentence summary]
+
+---
+
+### Engagement Comments
+**Option 1: The Differentiator**
+> [Insert comment here - Max 10 words]
+
+**Option 2: The Contrarian Angle**
+> [Insert comment here - Under 15 words]
+
+**Option 3: The Forward-Looker**
+> [Insert comment here - Under 15 words]
+`;
+      } else {
+        // Invite/Welcome/Followup Prompt
+        let goal = "";
+        if (activeTab === 'invite') {
+          goal = "Write a personalized LinkedIn connection invitation note. It MUST be extremely concise, professional, and strictly under 300 characters total.";
+          limit = 300;
+        } else if (activeTab === 'welcome') {
+          goal = "Write a personalized welcome follow-up message to send after the prospect accepted our connection request. Highlight our background in real estate administration/consulting or ask a relevant value question.";
+        } else if (activeTab === 'followup') {
+          goal = "Write a value-add follow-up message sharing a free real estate checklist or pitching a brief micro-market insight.";
+        }
+
+        prompt = `
 Context: You are managing outreach for a client targeting prospects in the real estate niche on LinkedIn.
 Prospect Details:
 - First Name: ${name}
@@ -1394,11 +1531,12 @@ Action Goal: ${goal}
 Global Tone/Directives:
 - Write directly as the sender (do not include placeholders like "[Your Name]" or subject lines).
 - Sounds like an authentic human peer, not an automated template. 
-- Avoid generic marketing pitches, high-pressure sells, or overly salesy words.
-- Guidelines / Gems Rules: ${geminiConfig.instructions || "Be direct, brief, and authentic."}
+- Avoid generic marketing pitches or high-pressure sells.
+- Guidelines / Rules: Keep it direct, brief, and authentic.
 
 Message Body Output:
 `;
+      }
 
       try {
         const temp = document.getElementById("gemini-temp").value;
@@ -1426,23 +1564,34 @@ Message Body Output:
         const data = await response.json();
         let aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
         
-        // Clean text (remove accidental wrapper quotes, backticks, or trailing signature placeholders)
         aiText = aiText.replace(/^["']|["']$/g, "").trim();
         aiText = aiText.replace(/\[Your Name\]/gi, "").trim();
 
-        document.getElementById("live-preview-text").textContent = aiText;
-        
-        // Update character count
-        const currentLen = aiText.length;
-        const limitCounter = document.getElementById("char-limit-counter");
-        limitCounter.textContent = `${currentLen} / ${limit}`;
-
-        if (currentLen > limit) {
-          limitCounter.classList.add("limit-exceeded");
-          showToast("AI generated text exceeds LinkedIn length limits. Editing required.", true);
+        if (activeTab === 'comment') {
+          // Render in Ghostwriter split layout
+          document.getElementById("ghostwrite-summary-text").textContent = parseSummary(aiText);
+          
+          const parsedOptions = extractCommentOptions(aiText);
+          document.getElementById("ghostwrite-opt1").textContent = parsedOptions.opt1 || "Error parsing Option 1";
+          document.getElementById("ghostwrite-opt2").textContent = parsedOptions.opt2 || "Error parsing Option 2";
+          document.getElementById("ghostwrite-opt3").textContent = parsedOptions.opt3 || "Error parsing Option 3";
+          
+          showToast("AI Generated 3 Comment Options!");
         } else {
-          limitCounter.classList.remove("limit-exceeded");
-          showToast("Gemini generated message successfully!");
+          // Render in standard layout
+          document.getElementById("live-preview-text").textContent = aiText;
+          
+          const currentLen = aiText.length;
+          const limitCounter = document.getElementById("char-limit-counter");
+          limitCounter.textContent = `${currentLen} / ${limit}`;
+
+          if (currentLen > limit) {
+            limitCounter.classList.add("limit-exceeded");
+            showToast("Warning: Message exceeds character limit.", true);
+          } else {
+            limitCounter.classList.remove("limit-exceeded");
+            showToast("Gemini message created!");
+          }
         }
 
       } catch (err) {
@@ -1451,6 +1600,59 @@ Message Body Output:
       } finally {
         button.innerHTML = originalText;
         button.disabled = false;
+      }
+    }
+
+    // Parse the summary sentence from output
+    function parseSummary(text) {
+      const match = text.match(/### Post Summary\s*\n*(.*)/i);
+      if (match) {
+        return match[1].replace(/^-+|---+$/g, "").trim();
+      }
+      // Fallback
+      const lines = text.split("\n").filter(l => l.trim().length > 0);
+      return lines[0] || "Summary could not be extracted.";
+    }
+
+    // Parse options from structured Ghostwriter markdown output
+    function extractCommentOptions(text) {
+      const options = { opt1: "", opt2: "", opt3: "" };
+      
+      const opt1Match = text.match(/\*\*Option 1:[^\n]*\n*>\s*(.*)/i);
+      const opt2Match = text.match(/\*\*Option 2:[^\n]*\n*>\s*(.*)/i);
+      const opt3Match = text.match(/\*\*Option 3:[^\n]*\n*>\s*(.*)/i);
+      
+      if (opt1Match) options.opt1 = opt1Match[1].replace(/[>"\s]+$/g, "").replace(/^[>"\s]+/g, "").trim();
+      if (opt2Match) options.opt2 = opt2Match[1].replace(/[>"\s]+$/g, "").replace(/^[>"\s]+/g, "").trim();
+      if (opt3Match) options.opt3 = opt3Match[1].replace(/[>"\s]+$/g, "").replace(/^[>"\s]+/g, "").trim();
+      
+      // Secondary fallback parser (splitting by Option titles)
+      if (!options.opt1 || !options.opt2) {
+        const parts = text.split(/\*\*Option \d:[^\n]*/i);
+        if (parts[1]) options.opt1 = parts[1].replace(/^[>\s\n"'\*-]+/g, "").split('\n')[0].trim();
+        if (parts[2]) options.opt2 = parts[2].replace(/^[>\s\n"'\*-]+/g, "").split('\n')[0].trim();
+        if (parts[3]) options.opt3 = parts[3].replace(/^[>\s\n"'\*-]+/g, "").split('\n')[0].trim();
+      }
+      return options;
+    }
+
+    // Copy single comment option to clipboard
+    async function copyCommentPiece(optionNum) {
+      const textToCopy = document.getElementById(`ghostwrite-opt${optionNum}`).textContent;
+      
+      if (textToCopy.includes("Waiting for generation...") || !textToCopy.trim()) {
+        showToast("No content to copy. Generate comments first.", true);
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        dailyStats.messages++; // Increment message/engagement counter
+        saveState();
+        renderStats();
+        showToast(`Option ${optionNum} copied to clipboard!`);
+      } catch (err) {
+        showToast("Copying failed.", true);
       }
     }
 
@@ -1500,20 +1702,46 @@ Message Body Output:
       tabs[tabMap[tabName]].classList.add("active");
 
       const selector = document.getElementById("template-selector");
-      selector.innerHTML = "";
+      const standardBox = document.getElementById("standard-template-box");
+      const commentInputArea = document.getElementById("post-comment-input-area");
       
-      const list = templates[tabName];
-      list.forEach((item, index) => {
-        const option = document.createElement("option");
-        option.value = index;
-        option.textContent = item.title;
-        selector.appendChild(option);
-      });
+      const standardOutput = document.getElementById("standard-output-box");
+      const ghostwriteOutput = document.getElementById("ghostwrite-output-box");
+      const mainCopyButton = document.getElementById("btn-copy-main");
 
-      loadSelectedTemplate();
+      if (tabName === 'comment') {
+        // Toggle input views
+        standardBox.style.display = "none";
+        commentInputArea.style.display = "flex";
+        
+        // Toggle output views
+        standardOutput.style.display = "none";
+        ghostwriteOutput.style.display = "flex";
+        mainCopyButton.style.display = "none"; // Hide main copy since we have individual option copies
+      } else {
+        standardBox.style.display = "flex";
+        commentInputArea.style.display = "none";
+        
+        standardOutput.style.display = "block";
+        ghostwriteOutput.style.display = "none";
+        mainCopyButton.style.display = "block";
+
+        // Load selector dropdown options
+        selector.innerHTML = "";
+        const list = templates[tabName];
+        list.forEach((item, index) => {
+          const option = document.createElement("option");
+          option.value = index;
+          option.textContent = item.title;
+          selector.appendChild(option);
+        });
+
+        loadSelectedTemplate();
+      }
     }
 
     function loadSelectedTemplate() {
+      if (activeTab === 'comment') return;
       const idx = document.getElementById("template-selector").value;
       if (idx === "") return;
 
@@ -1527,6 +1755,8 @@ Message Body Output:
 
     // Live preview generator replacing hooks {Name}, {Company}, {City}, {Niche}
     function updateLivePreview() {
+      if (activeTab === 'comment') return; // Handled by separate Ghostwriter output
+
       const idx = document.getElementById("template-selector").value;
       if (idx === "") return;
 
@@ -1561,6 +1791,15 @@ Message Body Output:
       document.getElementById("p-company").value = "";
       document.getElementById("p-city").value = "";
       document.getElementById("p-niche").value = "";
+      
+      document.getElementById("p-post-text").value = "";
+      document.getElementById("post-image-dropzone").style.backgroundImage = "none";
+      
+      document.getElementById("ghostwrite-summary-text").textContent = "Summary will load after generation...";
+      document.getElementById("ghostwrite-opt1").textContent = "Waiting for generation...";
+      document.getElementById("ghostwrite-opt2").textContent = "Waiting for generation...";
+      document.getElementById("ghostwrite-opt3").textContent = "Waiting for generation...";
+
       updateLivePreview();
     }
 
@@ -1580,7 +1819,7 @@ Message Body Output:
         renderStats();
         showToast("Outreach message copied to clipboard!");
       } catch (err) {
-        showToast("Failed to copy text. Please select and copy manually.", true);
+        showToast("Failed to copy text.", true);
       }
     }
 
@@ -1649,8 +1888,7 @@ Message Body Output:
       document.getElementById("p-city").value = p.city.split(",")[0];
       document.getElementById("p-niche").value = p.niche;
       
-      if (geminiConfig.apiKey) {
-        // If Gemini is connected, automatically trigger a draft generation
+      if (geminiConfig.apiKey && tabType !== 'comment') {
         switchTab(tabType);
         generateAIMessage();
       } else {
@@ -1772,13 +2010,13 @@ Message Body Output:
       showToast("Prospect details updated successfully.");
     }
 
-    // ===== SCREENSHOT CLIPBOARD PASTE OCR =====
+    // ===== PROSPECT SCREENSHOT OCR PASTE =====
     function handleDropzonePaste(e) {
       const items = (e.clipboardData || e.originalEvent.clipboardData).items;
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") === 0) {
           const blob = items[i].getAsFile();
-          processOCRImage(blob);
+          processProspectOCR(blob);
           e.preventDefault();
           return;
         }
@@ -1786,7 +2024,23 @@ Message Body Output:
       showToast("No image detected in clipboard! Paste an image file.", true);
     }
 
+    // ===== POST SCREENSHOT OCR PASTE =====
+    function handlePostDropzonePaste(e) {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") === 0) {
+          const blob = items[i].getAsFile();
+          processPostOCR(blob);
+          e.preventDefault();
+          return;
+        }
+      }
+      showToast("No image detected in clipboard! Paste an image file.", true);
+    }
+
+    // Global Paste Event Listener
     document.addEventListener("paste", (e) => {
+      // Don't hijack if user is typing inside text inputs
       if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
         return; 
       }
@@ -1795,20 +2049,27 @@ Message Body Output:
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") === 0) {
           const blob = items[i].getAsFile();
-          processOCRImage(blob);
+          
+          // Determine which dropzone has focus, or default to the active tab
+          if (activeTab === 'comment') {
+            processPostOCR(blob);
+          } else {
+            processProspectOCR(blob);
+          }
           e.preventDefault();
         }
       }
     });
 
-    function processOCRImage(blob) {
+    // Run OCR for Prospect Details
+    function processProspectOCR(blob) {
       const loader = document.getElementById("ocr-loader");
       const textHint = document.getElementById("dropzone-text");
       const dropzone = document.getElementById("image-dropzone");
       
       loader.style.display = "block";
       textHint.style.display = "none";
-      showToast("Scanning image for text details...");
+      showToast("Scanning image for profile details...");
 
       const reader = new FileReader();
       reader.onload = function(event) {
@@ -1818,58 +2079,37 @@ Message Body Output:
       };
       reader.readAsDataURL(blob);
 
-      Tesseract.recognize(
-        blob,
-        'eng'
-      ).then(({ data: { text } }) => {
-        parseAndPopulateOCR(text);
+      Tesseract.recognize(blob, 'eng').then(({ data: { text } }) => {
+        parseAndPopulateProspect(text);
       }).catch(err => {
         console.error(err);
-        showToast("Error reading image text. Please type manually.", true);
+        showToast("Error reading image text.", true);
       }).finally(() => {
         loader.style.display = "none";
         textHint.style.display = "block";
       });
     }
 
-    function parseAndPopulateOCR(text) {
-      if (!text || !text.trim()) {
-        showToast("No readable text found in image.", true);
-        return;
-      }
+    function parseAndPopulateProspect(text) {
+      if (!text || !text.trim()) return;
 
       const linkedinRegex = /https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9%_-]+/i;
       const liMatch = text.match(linkedinRegex);
-      if (liMatch) {
-        document.getElementById("profileUrl").value = liMatch[0];
-      }
+      if (liMatch) document.getElementById("profileUrl").value = liMatch[0];
 
       const webRegex = /https?:\/\/(www\.)?(?!linkedin)[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[a-zA-Z0-9./?=&_-]*/i;
       const webMatch = text.match(webRegex);
-      if (webMatch) {
-        document.getElementById("website").value = webMatch[0];
-      }
+      if (webMatch) document.getElementById("website").value = webMatch[0];
 
       let matchedNiche = "Real Estate Agent";
-      if (/buyer/i.test(text)) {
-        matchedNiche = "Buyer Agent";
-      } else if (/mortgage|loan/i.test(text)) {
-        matchedNiche = "Mortgage Broker";
-      } else if (/investor|investment|portfolio/i.test(text)) {
-        matchedNiche = "Property Investor";
-      }
+      if (/buyer/i.test(text)) matchedNiche = "Buyer Agent";
+      else if (/mortgage|loan/i.test(text)) matchedNiche = "Mortgage Broker";
+      else if (/investor|investment|portfolio/i.test(text)) matchedNiche = "Property Investor";
       document.getElementById("niche").value = matchedNiche;
 
       const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
-      
       const contentLines = lines.filter(line => {
-        return !/http/i.test(line) && 
-               !/linkedin/i.test(line) &&
-               !/connect/i.test(line) &&
-               !/message/i.test(line) &&
-               !/mutual/i.test(line) &&
-               !/followers/i.test(line) &&
-               !/connections/i.test(line);
+        return !/http/i.test(line) && !/linkedin/i.test(line) && !/connect/i.test(line) && !/message/i.test(line) && !/mutual/i.test(line) && !/followers/i.test(line);
       });
 
       if (contentLines.length > 0) {
@@ -1889,7 +2129,39 @@ Message Body Output:
       }
 
       document.getElementById("notes").value = `[Auto OCR Scan]:\n${text.substring(0, 400)}...`;
-      showToast("Data extracted from image! Please verify details.");
+      showToast("Profile details loaded from screenshot!");
+    }
+
+    // Run OCR for Prospect Post
+    function processPostOCR(blob) {
+      const loader = document.getElementById("post-ocr-loader");
+      const textHint = document.getElementById("post-dropzone-text");
+      const dropzone = document.getElementById("post-image-dropzone");
+      
+      loader.style.display = "block";
+      textHint.style.display = "none";
+      showToast("Reading post screenshot...");
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        dropzone.style.backgroundImage = `linear-gradient(rgba(8, 16, 34, 0.85), rgba(8, 16, 34, 0.85)), url(${event.target.result})`;
+        dropzone.style.backgroundSize = "cover";
+        dropzone.style.backgroundPosition = "center";
+      };
+      reader.readAsDataURL(blob);
+
+      Tesseract.recognize(blob, 'eng').then(({ data: { text } }) => {
+        // Clean OCR artifacts
+        let cleanText = text.replace(/^[|•#:\s\n]+/g, "").trim();
+        document.getElementById("p-post-text").value = cleanText;
+        showToast("LinkedIn post text extracted! Review it below.");
+      }).catch(err => {
+        console.error(err);
+        showToast("Failed to read image text.", true);
+      }).finally(() => {
+        loader.style.display = "none";
+        textHint.style.display = "block";
+      });
     }
 
     // ===== CSV IMPORT CONTROLLER =====
@@ -2047,6 +2319,36 @@ Message Body Output:
       downloadAnchor.click();
       downloadAnchor.remove();
       showToast("JSON Backup exported successfully!");
+    }
+
+    // ===== UTILITY FUNCTIONS =====
+    function showToast(message, isError = false) {
+      const toast = document.getElementById("toast");
+      const icon = document.getElementById("toast-icon");
+      const text = document.getElementById("toast-message");
+
+      text.textContent = message;
+      if (isError) {
+        toast.style.borderColor = "var(--red)";
+        icon.textContent = "✕";
+        icon.style.color = "var(--red)";
+      } else {
+        toast.style.borderColor = "var(--cyan)";
+        icon.textContent = "✓";
+        icon.style.color = "var(--cyan)";
+      }
+
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3000);
+    }
+
+    function openLinkedInSearch(term) {
+      const query = encodeURIComponent(term);
+      const url = `https://www.linkedin.com/search/results/people/?keywords=${query}`;
+      window.open(url, '_blank');
+      showToast(`Opening LinkedIn Search for "${term}"`);
     }
   </script>
 </body>

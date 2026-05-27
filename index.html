@@ -315,6 +315,10 @@
       box-shadow: none;
       transform: translateY(-1px);
     }
+    .btn-secondary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
     .btn-danger {
       background: linear-gradient(135deg, var(--red), #b91c1c);
       color: white;
@@ -880,13 +884,13 @@
           </div>
         </div>
 
-        <!-- Post Input / Screenshot Area for Comment Tab -->
+        <!-- Post Input / Screenshot Area (Visible in Invite and Comment tab) -->
         <div id="post-comment-input-area" style="display: none; border: 1px solid var(--border); padding: 1.25rem; border-radius: var(--radius-md); background: rgba(168, 85, 247, 0.03); flex-direction: column; gap: 1rem;">
-          <h3 style="font-size: 0.95rem; color: var(--purple); font-weight: 700; text-transform: uppercase;">📝 Prospect's Post Analyzer</h3>
+          <h3 style="font-size: 0.95rem; color: var(--purple); font-weight: 700; text-transform: uppercase;" id="post-analyzer-title">📝 Prospect's Post Analyzer</h3>
           
           <!-- Image Paste zone for Post Screenshot -->
           <div class="form-group">
-            <label>📷 Paste Screenshot of Prospect's Post</label>
+            <label id="post-dropzone-label">📷 Paste Screenshot of Prospect's Post</label>
             <div class="ocr-dropzone" id="post-image-dropzone" tabindex="0" style="padding: 1rem; border-color: rgba(168, 85, 247, 0.3);">
               <span style="font-size: 1.2rem; color: var(--purple);">📋</span>
               <span style="font-size: 0.75rem; color: var(--text-secondary);" id="post-dropzone-text">Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan post text</span>
@@ -895,12 +899,12 @@
           </div>
 
           <div class="form-group">
-            <label for="p-post-text">Or Paste Prospect's Post Text Directly</label>
+            <label for="p-post-text" id="post-textarea-label">Or Paste Prospect's Post Text Directly</label>
             <textarea id="p-post-text" placeholder="Copy-paste the text of the LinkedIn post they wrote here..." style="min-height: 100px; font-size: 0.9rem;"></textarea>
           </div>
         </div>
 
-        <!-- Selected Template Container (hidden when commenter is active) -->
+        <!-- Selected Template Container -->
         <div class="template-card" id="standard-template-box">
           <div class="template-meta">
             <span class="template-title" id="selected-template-title">Real Estate Hook Invite</span>
@@ -1183,11 +1187,11 @@
           <div class="form-group">
             <label for="edit-status">Status</label>
             <select id="edit-status">
-              <option value="to-connect">To Connect</option>
-              <option value="invited">Invited</option>
-              <option value="connected">Connected</option>
-              <option value="messaged">Messaged</option>
-              <option value="followed-up">Followed Up</option>
+              <option value="to-connect" ${p.status === 'to-connect' ? 'selected' : ''}>To Connect</option>
+              <option value="invited" ${p.status === 'invited' ? 'selected' : ''}>Invited</option>
+              <option value="connected" ${p.status === 'connected' ? 'selected' : ''}>Connected</option>
+              <option value="messaged" ${p.status === 'messaged' ? 'selected' : ''}>Messaged</option>
+              <option value="followed-up" ${p.status === 'followed-up' ? 'selected' : ''}>Followed Up</option>
             </select>
           </div>
         </div>
@@ -1273,7 +1277,7 @@ You are an expert LinkedIn Ghostwriter and B2B Lead Generation Assistant. Your c
           text: "Hi {Name},\n\nQuick follow-up on our chat! We recently helped a {Niche} over in the region streamline their client follow-up sequences, which saved them about 6 hours a week that they redirected to client acquisitions.\n\nSince you are representing clients in {City} under {Company}, I wanted to see if saving a few hours on admin tasks is something you are focusing on this season?\n\nBest,\n[Your Name]"
         }
       ],
-      comment: [] // Handled dynamically via Post Comment Generator inputs
+      comment: []
     };
 
     // ===== APPLICATION STATE =====
@@ -1305,13 +1309,11 @@ You are an expert LinkedIn Ghostwriter and B2B Lead Generation Assistant. Your c
         }
       });
 
-      // Bind paste events to the Prospect OCR Dropzone
       const dropzone = document.getElementById("image-dropzone");
       dropzone.addEventListener("paste", handleDropzonePaste);
       dropzone.addEventListener("focus", () => { dropzone.style.borderColor = "var(--cyan)"; });
       dropzone.addEventListener("blur", () => { dropzone.style.borderColor = "rgba(168, 85, 247, 0.4)"; });
 
-      // Bind paste events to the Post OCR Dropzone in Message Builder
       const postDropzone = document.getElementById("post-image-dropzone");
       postDropzone.addEventListener("paste", handlePostDropzonePaste);
       postDropzone.addEventListener("focus", () => { postDropzone.style.borderColor = "var(--cyan)"; });
@@ -1335,7 +1337,6 @@ You are an expert LinkedIn Ghostwriter and B2B Lead Generation Assistant. Your c
       if (storedProspects) {
         prospects = JSON.parse(storedProspects);
       } else {
-        // Pre-fill demo data with matching niche format
         prospects = [
           {
             niche: "Buyer Agent",
@@ -1393,11 +1394,9 @@ You are an expert LinkedIn Ghostwriter and B2B Lead Generation Assistant. Your c
         saveState();
       }
 
-      // Load Gemini Config
       const storedConfig = localStorage.getItem("outreach_gemini_config");
       if (storedConfig) {
         geminiConfig = JSON.parse(storedConfig);
-        // Pre-fill instructions if empty
         if (!geminiConfig.instructions) {
           geminiConfig.instructions = GHOSTWRITER_DEFAULT_RULES;
         }
@@ -1471,10 +1470,53 @@ You are an expert LinkedIn Ghostwriter and B2B Lead Generation Assistant. Your c
 
       let prompt = "";
       let limit = 1000;
+      const postText = document.getElementById("p-post-text").value.trim();
       
-      // Determine prompt format based on active tab
-      if (activeTab === 'comment') {
-        const postText = document.getElementById("p-post-text").value.trim() || "[No post text provided]";
+      if (activeTab === 'invite') {
+        if (postText) {
+          // Dynamic personalized invite leveraging the prospect's post text
+          prompt = `You are an expert LinkedIn B2B lead generation assistant. Your job is to analyze a prospect's recent LinkedIn post and write a hyper-personalized connection request.
+
+Prospect Info:
+- Name: ${name}
+- Niche: ${nicheVal}
+- Company: ${company}
+
+LinkedIn Post:
+"${postText}"
+
+DIRECTIONS:
+1. Read the provided LinkedIn post carefully.
+2. Generate a conversational connection request that references a specific insight from the post.
+
+CRITICAL GUIDELINES:
+- No generic fluff, fake praise, or formal jargon (AVOID "I stumbled upon your profile," "I'd love to connect," or "Great post").
+- Talk peer-to-peer—casual, professional, and friendly.
+- STRICT LENGTH LIMIT: The entire message must be between 10 and 15 words total. 
+- Do not pitch or sell. Just mention the post idea and propose a connection.
+
+OUTPUT FORMAT:
+Provide exactly one highly tailored option.`;
+          limit = 100;
+        } else {
+          // Standard profile details invite
+          prompt = `Context: You are managing outreach for a client targeting prospects in the real estate niche on LinkedIn.
+Prospect Details:
+- First Name: ${name}
+- Niche: ${nicheVal || 'Real Estate Professional'}
+- Company: ${company || 'Independent/Unspecified'}
+- Target City: ${city || 'Local area'}
+
+Outreach Step: CONNECTION INVITE
+Action Goal: Write a personalized LinkedIn connection invitation note. It MUST be extremely concise, professional, and under 300 characters total.
+
+Global Tone/Directives:
+- Write directly as the sender (do not include placeholders like "[Your Name]").
+- Sounds like an authentic human peer.
+- Keep it direct, brief, and authentic.`;
+          limit = 300;
+        }
+      } else if (activeTab === 'comment') {
         prompt = `
 ${geminiConfig.instructions}
 
@@ -1485,7 +1527,7 @@ ${geminiConfig.instructions}
 - City: ${city}
 
 # Provided LinkedIn Post:
-"${postText}"
+"${postText || '[No post text provided]'}"
 
 # Output Format
 Provide the response exactly in the following clean, scannable format:
@@ -1506,12 +1548,9 @@ Provide the response exactly in the following clean, scannable format:
 > [Insert comment here - Under 15 words]
 `;
       } else {
-        // Invite/Welcome/Followup Prompt
+        // Welcome and Value Follow-ups
         let goal = "";
-        if (activeTab === 'invite') {
-          goal = "Write a personalized LinkedIn connection invitation note. It MUST be extremely concise, professional, and strictly under 300 characters total.";
-          limit = 300;
-        } else if (activeTab === 'welcome') {
+        if (activeTab === 'welcome') {
           goal = "Write a personalized welcome follow-up message to send after the prospect accepted our connection request. Highlight our background in real estate administration/consulting or ask a relevant value question.";
         } else if (activeTab === 'followup') {
           goal = "Write a value-add follow-up message sharing a free real estate checklist or pitching a brief micro-market insight.";
@@ -1529,13 +1568,9 @@ Outreach Step: ${activeTab.toUpperCase()}
 Action Goal: ${goal}
 
 Global Tone/Directives:
-- Write directly as the sender (do not include placeholders like "[Your Name]" or subject lines).
-- Sounds like an authentic human peer, not an automated template. 
-- Avoid generic marketing pitches or high-pressure sells.
-- Guidelines / Rules: Keep it direct, brief, and authentic.
-
-Message Body Output:
-`;
+- Write directly as the sender (do not include placeholders like "[Your Name]").
+- Sounds like an authentic human peer.
+- Keep it direct, brief, and authentic.`;
       }
 
       try {
@@ -1568,7 +1603,6 @@ Message Body Output:
         aiText = aiText.replace(/\[Your Name\]/gi, "").trim();
 
         if (activeTab === 'comment') {
-          // Render in Ghostwriter split layout
           document.getElementById("ghostwrite-summary-text").textContent = parseSummary(aiText);
           
           const parsedOptions = extractCommentOptions(aiText);
@@ -1578,7 +1612,6 @@ Message Body Output:
           
           showToast("AI Generated 3 Comment Options!");
         } else {
-          // Render in standard layout
           document.getElementById("live-preview-text").textContent = aiText;
           
           const currentLen = aiText.length;
@@ -1603,18 +1636,15 @@ Message Body Output:
       }
     }
 
-    // Parse the summary sentence from output
     function parseSummary(text) {
       const match = text.match(/### Post Summary\s*\n*(.*)/i);
       if (match) {
         return match[1].replace(/^-+|---+$/g, "").trim();
       }
-      // Fallback
       const lines = text.split("\n").filter(l => l.trim().length > 0);
       return lines[0] || "Summary could not be extracted.";
     }
 
-    // Parse options from structured Ghostwriter markdown output
     function extractCommentOptions(text) {
       const options = { opt1: "", opt2: "", opt3: "" };
       
@@ -1626,7 +1656,6 @@ Message Body Output:
       if (opt2Match) options.opt2 = opt2Match[1].replace(/[>"\s]+$/g, "").replace(/^[>"\s]+/g, "").trim();
       if (opt3Match) options.opt3 = opt3Match[1].replace(/[>"\s]+$/g, "").replace(/^[>"\s]+/g, "").trim();
       
-      // Secondary fallback parser (splitting by Option titles)
       if (!options.opt1 || !options.opt2) {
         const parts = text.split(/\*\*Option \d:[^\n]*/i);
         if (parts[1]) options.opt1 = parts[1].replace(/^[>\s\n"'\*-]+/g, "").split('\n')[0].trim();
@@ -1636,7 +1665,6 @@ Message Body Output:
       return options;
     }
 
-    // Copy single comment option to clipboard
     async function copyCommentPiece(optionNum) {
       const textToCopy = document.getElementById(`ghostwrite-opt${optionNum}`).textContent;
       
@@ -1647,7 +1675,7 @@ Message Body Output:
 
       try {
         await navigator.clipboard.writeText(textToCopy);
-        dailyStats.messages++; // Increment message/engagement counter
+        dailyStats.messages++;
         saveState();
         renderStats();
         showToast(`Option ${optionNum} copied to clipboard!`);
@@ -1709,16 +1737,52 @@ Message Body Output:
       const ghostwriteOutput = document.getElementById("ghostwrite-output-box");
       const mainCopyButton = document.getElementById("btn-copy-main");
 
-      if (tabName === 'comment') {
-        // Toggle input views
+      const postTitle = document.getElementById("post-analyzer-title");
+      const dropzoneLabel = document.getElementById("post-dropzone-label");
+      const dropzoneText = document.getElementById("post-dropzone-text");
+      const textareaLabel = document.getElementById("post-textarea-label");
+
+      if (tabName === 'invite') {
+        // Toggle input views (make post analyzer visible as optional hook)
+        standardBox.style.display = "flex";
+        commentInputArea.style.display = "flex";
+        
+        postTitle.textContent = "🔗 Reference Prospect's Recent Post (Optional)";
+        dropzoneLabel.textContent = "📷 Paste Screenshot of Post to Analyze";
+        dropzoneText.innerHTML = "Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan post to personalize invite";
+        textareaLabel.textContent = "Or Paste Post Text Below";
+
+        // Toggle output views
+        standardOutput.style.display = "block";
+        ghostwriteOutput.style.display = "none";
+        mainCopyButton.style.display = "block";
+
+        selector.innerHTML = "";
+        const list = templates[tabName];
+        list.forEach((item, index) => {
+          const option = document.createElement("option");
+          option.value = index;
+          option.textContent = item.title;
+          selector.appendChild(option);
+        });
+
+        loadSelectedTemplate();
+      } else if (tabName === 'comment') {
+        // Toggle input views (make post analyzer mandatory)
         standardBox.style.display = "none";
         commentInputArea.style.display = "flex";
+
+        postTitle.textContent = "📝 Prospect's Post Analyzer";
+        dropzoneLabel.textContent = "📷 Paste Screenshot of Prospect's Post";
+        dropzoneText.innerHTML = "Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan post text";
+        textareaLabel.textContent = "Or Paste Prospect's Post Text Directly";
         
         // Toggle output views
         standardOutput.style.display = "none";
         ghostwriteOutput.style.display = "flex";
-        mainCopyButton.style.display = "none"; // Hide main copy since we have individual option copies
+        mainCopyButton.style.display = "none";
       } else {
+        // Welcome and Followup tabs
         standardBox.style.display = "flex";
         commentInputArea.style.display = "none";
         
@@ -1726,7 +1790,6 @@ Message Body Output:
         ghostwriteOutput.style.display = "none";
         mainCopyButton.style.display = "block";
 
-        // Load selector dropdown options
         selector.innerHTML = "";
         const list = templates[tabName];
         list.forEach((item, index) => {
@@ -1753,9 +1816,8 @@ Message Body Output:
       updateLivePreview();
     }
 
-    // Live preview generator replacing hooks {Name}, {Company}, {City}, {Niche}
     function updateLivePreview() {
-      if (activeTab === 'comment') return; // Handled by separate Ghostwriter output
+      if (activeTab === 'comment') return;
 
       const idx = document.getElementById("template-selector").value;
       if (idx === "") return;
@@ -2010,7 +2072,7 @@ Message Body Output:
       showToast("Prospect details updated successfully.");
     }
 
-    // ===== PROSPECT SCREENSHOT OCR PASTE =====
+    // ===== SCREENSHOT CLIPBOARD PASTE OCR =====
     function handleDropzonePaste(e) {
       const items = (e.clipboardData || e.originalEvent.clipboardData).items;
       for (let i = 0; i < items.length; i++) {
@@ -2024,7 +2086,6 @@ Message Body Output:
       showToast("No image detected in clipboard! Paste an image file.", true);
     }
 
-    // ===== POST SCREENSHOT OCR PASTE =====
     function handlePostDropzonePaste(e) {
       const items = (e.clipboardData || e.originalEvent.clipboardData).items;
       for (let i = 0; i < items.length; i++) {
@@ -2038,9 +2099,7 @@ Message Body Output:
       showToast("No image detected in clipboard! Paste an image file.", true);
     }
 
-    // Global Paste Event Listener
     document.addEventListener("paste", (e) => {
-      // Don't hijack if user is typing inside text inputs
       if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
         return; 
       }
@@ -2049,9 +2108,7 @@ Message Body Output:
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") === 0) {
           const blob = items[i].getAsFile();
-          
-          // Determine which dropzone has focus, or default to the active tab
-          if (activeTab === 'comment') {
+          if (activeTab === 'comment' || activeTab === 'invite') {
             processPostOCR(blob);
           } else {
             processProspectOCR(blob);
@@ -2061,7 +2118,6 @@ Message Body Output:
       }
     });
 
-    // Run OCR for Prospect Details
     function processProspectOCR(blob) {
       const loader = document.getElementById("ocr-loader");
       const textHint = document.getElementById("dropzone-text");
@@ -2132,7 +2188,6 @@ Message Body Output:
       showToast("Profile details loaded from screenshot!");
     }
 
-    // Run OCR for Prospect Post
     function processPostOCR(blob) {
       const loader = document.getElementById("post-ocr-loader");
       const textHint = document.getElementById("post-dropzone-text");
@@ -2151,10 +2206,14 @@ Message Body Output:
       reader.readAsDataURL(blob);
 
       Tesseract.recognize(blob, 'eng').then(({ data: { text } }) => {
-        // Clean OCR artifacts
         let cleanText = text.replace(/^[|•#:\s\n]+/g, "").trim();
         document.getElementById("p-post-text").value = cleanText;
         showToast("LinkedIn post text extracted! Review it below.");
+        
+        // Auto trigger invite generation if in Connection tab and API key active
+        if (activeTab === 'invite' && geminiConfig.apiKey) {
+           generateAIMessage();
+        }
       }).catch(err => {
         console.error(err);
         showToast("Failed to read image text.", true);

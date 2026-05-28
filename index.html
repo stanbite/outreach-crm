@@ -846,61 +846,64 @@
           <button class="tab-btn" onclick="switchTab('comment')">4. Comment Ghostwriter</button>
         </div>
 
-        <!-- Gemini AI Settings Panel -->
-        <div class="gemini-config-box">
-          <div class="gemini-config-header">
+        <!-- Gemini AI Settings Panel (Collapsible Details) -->
+        <details class="gemini-config-box" style="cursor: pointer; outline: none;">
+          <summary class="gemini-config-header" style="list-style: none; display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <span>🤖 Gemini AI Settings</span>
-            <span class="api-status-badge api-status-disconnected" id="api-status">API Key Missing</span>
-          </div>
-          <div class="form-group">
-            <label for="gemini-key">Gemini API Key</label>
-            <input type="password" id="gemini-key" placeholder="AIzaSy..." onchange="saveAPIKey()" style="font-family: var(--font-mono);" />
-            <span style="font-size: 0.75rem; color: var(--text-muted);">
-              Key is stored locally in your browser. Get a free key from <a href="https://aistudio.google.com/" target="_blank" style="color: var(--cyan); text-decoration: none;">Google AI Studio</a>.
-            </span>
-          </div>
-          
-          <div class="form-row">
+            <span class="api-status-badge api-status-disconnected" id="api-status" style="margin-left: auto; margin-right: 1rem;">API Key Missing</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">▼ Click to Configure</span>
+          </summary>
+          <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem; cursor: default;" onclick="event.stopPropagation()">
             <div class="form-group">
-              <label for="gemini-model">AI Model Selection</label>
-              <select id="gemini-model" onchange="saveAPIKey()">
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended)</option>
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro (Slower/High Quality)</option>
-              </select>
+              <label for="gemini-key">Gemini API Key</label>
+              <input type="password" id="gemini-key" placeholder="AIzaSy..." onchange="saveAPIKey()" style="font-family: var(--font-mono);" />
+              <span style="font-size: 0.75rem; color: var(--text-muted);">
+                Key is stored locally in your browser. Get a free key from <a href="https://aistudio.google.com/" target="_blank" style="color: var(--cyan); text-decoration: none;">Google AI Studio</a>.
+              </span>
             </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="gemini-model">AI Model Selection</label>
+                <select id="gemini-model" onchange="saveAPIKey()">
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended)</option>
+                  <option value="gemini-2.5-pro">Gemini 2.5 Pro (Slower/High Quality)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="gemini-temp">Creativity (Temp)</label>
+                <select id="gemini-temp">
+                  <option value="0.3">Professional (0.3)</option>
+                  <option value="0.7" selected>Balanced (0.7)</option>
+                  <option value="1.0">Creative (1.0)</option>
+                </select>
+              </div>
+            </div>
+
             <div class="form-group">
-              <label for="gemini-temp">Creativity (Temp)</label>
-              <select id="gemini-temp">
-                <option value="0.3">Professional (0.3)</option>
-                <option value="0.7" selected>Balanced (0.7)</option>
-                <option value="1.0">Creative (1.0)</option>
-              </select>
+              <label for="gemini-instructions">AI Instructions / Custom "Gems" Rules</label>
+              <textarea id="gemini-instructions" placeholder="Enter custom rules here..." style="min-height: 120px;"></textarea>
             </div>
           </div>
+        </details>
 
-          <div class="form-group">
-            <label for="gemini-instructions">AI Instructions / Custom "Gems" Rules</label>
-            <textarea id="gemini-instructions" placeholder="Enter custom rules here..." style="min-height: 120px;"></textarea>
-          </div>
-        </div>
-
-        <!-- Post Input / Screenshot Area (Visible in Invite and Comment tab) -->
-        <div id="post-comment-input-area" style="display: none; border: 1px solid var(--border); padding: 1.25rem; border-radius: var(--radius-md); background: rgba(168, 85, 247, 0.03); flex-direction: column; gap: 1rem;">
-          <h3 style="font-size: 0.95rem; color: var(--purple); font-weight: 700; text-transform: uppercase;" id="post-analyzer-title">📝 Prospect's Post Analyzer</h3>
+        <!-- Global Context / Post / Inbox Conversation Screenshot OCR Dropzone -->
+        <div id="post-comment-input-area" style="border: 1px solid var(--border); padding: 1.25rem; border-radius: var(--radius-md); background: rgba(168, 85, 247, 0.03); display: flex; flex-direction: column; gap: 1rem;">
+          <h3 style="font-size: 0.95rem; color: var(--purple); font-weight: 700; text-transform: uppercase;" id="post-analyzer-title">📸 Context &amp; Screenshot Analyzer</h3>
           
-          <!-- Image Paste zone for Post Screenshot -->
+          <!-- Image Paste zone for Screenshots (Inbox History, Posts, Profile Card) -->
           <div class="form-group">
-            <label id="post-dropzone-label">📷 Paste Screenshot of Prospect's Post</label>
+            <label id="post-dropzone-label">📷 Paste Screenshot of Inbox Conversation or Post</label>
             <div class="ocr-dropzone" id="post-image-dropzone" tabindex="0" style="padding: 1rem; border-color: rgba(168, 85, 247, 0.3);">
               <span style="font-size: 1.2rem; color: var(--purple);">📋</span>
-              <span style="font-size: 0.75rem; color: var(--text-secondary);" id="post-dropzone-text">Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan post text</span>
-              <div id="post-ocr-loader" style="display: none; font-size: 0.75rem; color: var(--cyan);">Scanning post...</div>
+              <span style="font-size: 0.75rem; color: var(--text-secondary);" id="post-dropzone-text">Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan conversation history or post</span>
+              <div id="post-ocr-loader" style="display: none; font-size: 0.75rem; color: var(--cyan);">Scanning image...</div>
             </div>
           </div>
 
           <div class="form-group">
-            <label for="p-post-text" id="post-textarea-label">Or Paste Prospect's Post Text Directly</label>
-            <textarea id="p-post-text" placeholder="Copy-paste the text of the LinkedIn post they wrote here..." style="min-height: 100px; font-size: 0.9rem;"></textarea>
+            <label for="p-post-text" id="post-textarea-label">Conversation History / Post Text Context</label>
+            <textarea id="p-post-text" placeholder="Paste the message history, their post, or let the OCR scan write it here to help Gemini customize your reply..." style="min-height: 100px; font-size: 0.9rem;"></textarea>
           </div>
         </div>
 
@@ -1187,11 +1190,11 @@
           <div class="form-group">
             <label for="edit-status">Status</label>
             <select id="edit-status">
-              <option value="to-connect" ${p.status === 'to-connect' ? 'selected' : ''}>To Connect</option>
-              <option value="invited" ${p.status === 'invited' ? 'selected' : ''}>Invited</option>
-              <option value="connected" ${p.status === 'connected' ? 'selected' : ''}>Connected</option>
-              <option value="messaged" ${p.status === 'messaged' ? 'selected' : ''}>Messaged</option>
-              <option value="followed-up" ${p.status === 'followed-up' ? 'selected' : ''}>Followed Up</option>
+              <option value="to-connect">To Connect</option>
+              <option value="invited">Invited</option>
+              <option value="connected">Connected</option>
+              <option value="messaged">Messaged</option>
+              <option value="followed-up">Followed Up</option>
             </select>
           </div>
         </div>
@@ -1548,12 +1551,17 @@ Provide the response exactly in the following clean, scannable format:
 > [Insert comment here - Under 15 words]
 `;
       } else {
-        // Welcome and Value Follow-ups
+        // Welcome and Value Follow-ups (incorporate context/conversation screenshot text if present)
         let goal = "";
         if (activeTab === 'welcome') {
           goal = "Write a personalized welcome follow-up message to send after the prospect accepted our connection request. Highlight our background in real estate administration/consulting or ask a relevant value question.";
         } else if (activeTab === 'followup') {
           goal = "Write a value-add follow-up message sharing a free real estate checklist or pitching a brief micro-market insight.";
+        }
+
+        let contextInjection = "";
+        if (postText) {
+          contextInjection = `\n\nHere is the conversation history or context screenshot text from the prospect:\n"${postText}"\n\nTask details: Refer to the conversation history above to make the reply contextual and natural. Answer any questions they asked, or reference the last message naturally.`;
         }
 
         prompt = `
@@ -1562,7 +1570,7 @@ Prospect Details:
 - First Name: ${name}
 - Niche: ${nicheVal || 'Real Estate Professional'}
 - Company: ${company || 'Independent/Unspecified'}
-- Target City: ${city || 'Local area'}
+- Target City: ${city || 'Local area'}${contextInjection}
 
 Outreach Step: ${activeTab.toUpperCase()}
 Action Goal: ${goal}
@@ -1684,41 +1692,6 @@ Global Tone/Directives:
       }
     }
 
-    // ===== RENDER SYSTEM =====
-    function renderStats() {
-      const inviteLimit = 25;
-      const messageLimit = 25;
-
-      document.getElementById("invite-count-val").textContent = `${dailyStats.invites} / ${inviteLimit}`;
-      document.getElementById("message-count-val").textContent = `${dailyStats.messages} / ${messageLimit}`;
-      document.getElementById("total-prospects-val").textContent = prospects.length;
-
-      const invitePct = Math.min((dailyStats.invites / inviteLimit) * 100, 100);
-      const messagePct = Math.min((dailyStats.messages / messageLimit) * 100, 100);
-
-      document.getElementById("invite-progress").style.width = `${invitePct}%`;
-      document.getElementById("message-progress").style.width = `${messagePct}%`;
-
-      const invitesCard = document.getElementById("stat-invites");
-      const messagesCard = document.getElementById("stat-messages");
-
-      if (dailyStats.invites >= inviteLimit) {
-        invitesCard.classList.add("limit-warning");
-        document.getElementById("invite-progress").style.background = "linear-gradient(90deg, var(--amber), var(--red))";
-      } else {
-        invitesCard.classList.remove("limit-warning");
-        document.getElementById("invite-progress").style.background = "linear-gradient(90deg, var(--cyan), var(--blue))";
-      }
-
-      if (dailyStats.messages >= messageLimit) {
-        messagesCard.classList.add("limit-warning");
-        document.getElementById("message-progress").style.background = "linear-gradient(90deg, var(--amber), var(--red))";
-      } else {
-        messagesCard.classList.remove("limit-warning");
-        document.getElementById("message-progress").style.background = "linear-gradient(90deg, var(--cyan), var(--blue))";
-      }
-    }
-
     // ===== TEMPLATE SWITCHING & DISPLAY =====
     function switchTab(tabName) {
       activeTab = tabName;
@@ -1742,17 +1715,17 @@ Global Tone/Directives:
       const dropzoneText = document.getElementById("post-dropzone-text");
       const textareaLabel = document.getElementById("post-textarea-label");
 
+      // Global context box is now visible across all tabs
+      commentInputArea.style.display = "flex";
+
       if (tabName === 'invite') {
-        // Toggle input views (make post analyzer visible as optional hook)
         standardBox.style.display = "flex";
-        commentInputArea.style.display = "flex";
         
-        postTitle.textContent = "🔗 Reference Prospect's Recent Post (Optional)";
-        dropzoneLabel.textContent = "📷 Paste Screenshot of Post to Analyze";
+        postTitle.textContent = "📸 Context & Screenshot Analyzer";
+        dropzoneLabel.textContent = "📷 Paste Screenshot of Prospect's Post";
         dropzoneText.innerHTML = "Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan post to personalize invite";
         textareaLabel.textContent = "Or Paste Post Text Below";
 
-        // Toggle output views
         standardOutput.style.display = "block";
         ghostwriteOutput.style.display = "none";
         mainCopyButton.style.display = "block";
@@ -1768,24 +1741,25 @@ Global Tone/Directives:
 
         loadSelectedTemplate();
       } else if (tabName === 'comment') {
-        // Toggle input views (make post analyzer mandatory)
         standardBox.style.display = "none";
-        commentInputArea.style.display = "flex";
 
         postTitle.textContent = "📝 Prospect's Post Analyzer";
         dropzoneLabel.textContent = "📷 Paste Screenshot of Prospect's Post";
         dropzoneText.innerHTML = "Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan post text";
         textareaLabel.textContent = "Or Paste Prospect's Post Text Directly";
         
-        // Toggle output views
         standardOutput.style.display = "none";
         ghostwriteOutput.style.display = "flex";
         mainCopyButton.style.display = "none";
       } else {
-        // Welcome and Followup tabs
+        // Welcome and Followup tabs (use context for inbox thread screenshot)
         standardBox.style.display = "flex";
-        commentInputArea.style.display = "none";
-        
+
+        postTitle.textContent = "💬 Inbox Thread & Conversation Analyzer";
+        dropzoneLabel.textContent = "📷 Paste Screenshot of DM Conversation";
+        dropzoneText.innerHTML = "Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan chat history and draft reply";
+        textareaLabel.textContent = "Or Paste Message History/Thread Text Directly";
+
         standardOutput.style.display = "block";
         ghostwriteOutput.style.display = "none";
         mainCopyButton.style.display = "block";
@@ -2108,7 +2082,7 @@ Global Tone/Directives:
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") === 0) {
           const blob = items[i].getAsFile();
-          if (activeTab === 'comment' || activeTab === 'invite') {
+          if (activeTab === 'comment' || activeTab === 'invite' || activeTab === 'welcome' || activeTab === 'followup') {
             processPostOCR(blob);
           } else {
             processProspectOCR(blob);
@@ -2195,7 +2169,7 @@ Global Tone/Directives:
       
       loader.style.display = "block";
       textHint.style.display = "none";
-      showToast("Reading post screenshot...");
+      showToast("Reading screenshot context...");
 
       const reader = new FileReader();
       reader.onload = function(event) {
@@ -2208,10 +2182,10 @@ Global Tone/Directives:
       Tesseract.recognize(blob, 'eng').then(({ data: { text } }) => {
         let cleanText = text.replace(/^[|•#:\s\n]+/g, "").trim();
         document.getElementById("p-post-text").value = cleanText;
-        showToast("LinkedIn post text extracted! Review it below.");
+        showToast("Text context extracted! Review it below.");
         
-        // Auto trigger invite generation if in Connection tab and API key active
-        if (activeTab === 'invite' && geminiConfig.apiKey) {
+        // Auto trigger replies/invite drafts if Gemini is active
+        if (geminiConfig.apiKey) {
            generateAIMessage();
         }
       }).catch(err => {
@@ -2226,6 +2200,18 @@ Global Tone/Directives:
     // ===== CSV IMPORT CONTROLLER =====
     function importCSVClick() {
       document.getElementById("import-csv-file").click();
+    }
+
+    // JSON Raw Backup
+    function exportJSONBackup() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(prospects, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href",     dataStr);
+      downloadAnchor.setAttribute("download", `linkedin_prospects_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("JSON Backup exported successfully!");
     }
 
     function handleCSVImport(e) {
@@ -2366,48 +2352,6 @@ Global Tone/Directives:
       link.click();
       document.body.removeChild(link);
       showToast("Spreadsheet exported successfully!");
-    }
-
-    // JSON Raw Backup
-    function exportJSONBackup() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(prospects, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href",     dataStr);
-      downloadAnchor.setAttribute("download", `linkedin_prospects_backup_${new Date().toISOString().slice(0,10)}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      showToast("JSON Backup exported successfully!");
-    }
-
-    // ===== UTILITY FUNCTIONS =====
-    function showToast(message, isError = false) {
-      const toast = document.getElementById("toast");
-      const icon = document.getElementById("toast-icon");
-      const text = document.getElementById("toast-message");
-
-      text.textContent = message;
-      if (isError) {
-        toast.style.borderColor = "var(--red)";
-        icon.textContent = "✕";
-        icon.style.color = "var(--red)";
-      } else {
-        toast.style.borderColor = "var(--cyan)";
-        icon.textContent = "✓";
-        icon.style.color = "var(--cyan)";
-      }
-
-      toast.classList.add("show");
-      setTimeout(() => {
-        toast.classList.remove("show");
-      }, 3000);
-    }
-
-    function openLinkedInSearch(term) {
-      const query = encodeURIComponent(term);
-      const url = `https://www.linkedin.com/search/results/people/?keywords=${query}`;
-      window.open(url, '_blank');
-      showToast(`Opening LinkedIn Search for "${term}"`);
     }
   </script>
 </body>

@@ -896,9 +896,10 @@
             <label id="post-dropzone-label">📷 Paste Screenshot of Inbox Conversation or Post</label>
             <div class="ocr-dropzone" id="post-image-dropzone" tabindex="0" style="padding: 1rem; border-color: rgba(168, 85, 247, 0.3);">
               <span style="font-size: 1.2rem; color: var(--purple);">📋</span>
-              <span style="font-size: 0.75rem; color: var(--text-secondary);" id="post-dropzone-text">Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan conversation history or post</span>
+              <span style="font-size: 0.75rem; color: var(--text-secondary);" id="post-dropzone-text">Click to upload, drag &amp; drop, or paste screenshot (Cmd+V)</span>
               <div id="post-ocr-loader" style="display: none; font-size: 0.75rem; color: var(--cyan);">Scanning image...</div>
             </div>
+            <input type="file" id="post-image-file-input" accept="image/*" style="display: none;" />
           </div>
 
           <div class="form-group">
@@ -1001,12 +1002,13 @@
           <div class="ocr-dropzone" id="image-dropzone" tabindex="0">
             <span style="font-size: 1.5rem; color: var(--purple);">📋</span>
             <span style="font-size: 0.85rem; color: var(--text-secondary);" id="dropzone-text">
-              Click here, then press <b>Cmd+V</b> or <b>Ctrl+V</b> to paste profile screenshot
+              Click to upload, drag &amp; drop, or paste profile screenshot (Cmd+V)
             </span>
             <div id="ocr-loader" style="display: none; font-size: 0.85rem; color: var(--cyan);">
               <span class="glow-text">Scanning image details... Please wait...</span>
             </div>
           </div>
+          <input type="file" id="prospect-image-file-input" accept="image/*" style="display: none;" />
         </div>
 
         <form id="prospect-form" onsubmit="saveProspect(event)">
@@ -1317,10 +1319,82 @@ You are an expert LinkedIn Ghostwriter and B2B Lead Generation Assistant. Your c
       dropzone.addEventListener("focus", () => { dropzone.style.borderColor = "var(--cyan)"; });
       dropzone.addEventListener("blur", () => { dropzone.style.borderColor = "rgba(168, 85, 247, 0.4)"; });
 
+      // Click to choose file
+      dropzone.addEventListener("click", () => {
+        document.getElementById("prospect-image-file-input").click();
+      });
+      document.getElementById("prospect-image-file-input").addEventListener("click", (e) => {
+        e.stopPropagation(); // Avoid triggering parent click twice
+      });
+      document.getElementById("prospect-image-file-input").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          processProspectOCR(file);
+        }
+      });
+
+      // Drag and drop handlers
+      dropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropzone.style.borderColor = "var(--purple)";
+        dropzone.style.background = "rgba(168, 85, 247, 0.08)";
+      });
+      dropzone.addEventListener("dragleave", () => {
+        dropzone.style.borderColor = "rgba(168, 85, 247, 0.4)";
+        dropzone.style.background = "rgba(168, 85, 247, 0.02)";
+      });
+      dropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropzone.style.borderColor = "rgba(168, 85, 247, 0.4)";
+        dropzone.style.background = "rgba(168, 85, 247, 0.02)";
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].type.indexOf("image") === 0) {
+          processProspectOCR(files[0]);
+        } else {
+          showToast("Please drop an image file.", true);
+        }
+      });
+
       const postDropzone = document.getElementById("post-image-dropzone");
       postDropzone.addEventListener("paste", handlePostDropzonePaste);
       postDropzone.addEventListener("focus", () => { postDropzone.style.borderColor = "var(--cyan)"; });
       postDropzone.addEventListener("blur", () => { postDropzone.style.borderColor = "rgba(168, 85, 247, 0.3)"; });
+
+      // Click to choose file
+      postDropzone.addEventListener("click", () => {
+        document.getElementById("post-image-file-input").click();
+      });
+      document.getElementById("post-image-file-input").addEventListener("click", (e) => {
+        e.stopPropagation(); // Avoid triggering parent click twice
+      });
+      document.getElementById("post-image-file-input").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          processPostOCR(file);
+        }
+      });
+
+      // Drag and drop handlers
+      postDropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        postDropzone.style.borderColor = "var(--purple)";
+        postDropzone.style.background = "rgba(168, 85, 247, 0.1)";
+      });
+      postDropzone.addEventListener("dragleave", () => {
+        postDropzone.style.borderColor = "rgba(168, 85, 247, 0.3)";
+        postDropzone.style.background = "rgba(168, 85, 247, 0.03)";
+      });
+      postDropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        postDropzone.style.borderColor = "rgba(168, 85, 247, 0.3)";
+        postDropzone.style.background = "rgba(168, 85, 247, 0.03)";
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].type.indexOf("image") === 0) {
+          processPostOCR(files[0]);
+        } else {
+          showToast("Please drop an image file.", true);
+        }
+      });
 
       loadState();
       renderStats();
@@ -1723,7 +1797,7 @@ Global Tone/Directives:
         
         postTitle.textContent = "📸 Context & Screenshot Analyzer";
         dropzoneLabel.textContent = "📷 Paste Screenshot of Prospect's Post";
-        dropzoneText.innerHTML = "Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan post to personalize invite";
+        dropzoneText.innerHTML = "Click to upload, drag & drop, or paste screenshot (Cmd+V) to scan post";
         textareaLabel.textContent = "Or Paste Post Text Below";
 
         standardOutput.style.display = "block";
@@ -1745,7 +1819,7 @@ Global Tone/Directives:
 
         postTitle.textContent = "📝 Prospect's Post Analyzer";
         dropzoneLabel.textContent = "📷 Paste Screenshot of Prospect's Post";
-        dropzoneText.innerHTML = "Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan post text";
+        dropzoneText.innerHTML = "Click to upload, drag & drop, or paste screenshot (Cmd+V) to scan post text";
         textareaLabel.textContent = "Or Paste Prospect's Post Text Directly";
         
         standardOutput.style.display = "none";
@@ -1757,7 +1831,7 @@ Global Tone/Directives:
 
         postTitle.textContent = "💬 Inbox Thread & Conversation Analyzer";
         dropzoneLabel.textContent = "📷 Paste Screenshot of DM Conversation";
-        dropzoneText.innerHTML = "Click and press <b>Cmd+V</b> / <b>Ctrl+V</b> to scan chat history and draft reply";
+        dropzoneText.innerHTML = "Click to upload, drag & drop, or paste screenshot (Cmd+V) to scan DM chat history";
         textareaLabel.textContent = "Or Paste Message History/Thread Text Directly";
 
         standardOutput.style.display = "block";
